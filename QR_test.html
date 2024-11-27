@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QRコードリーダー</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        #video {
+            max-width: 100%;
+            width: 100%;
+            height: auto;
+            margin-bottom: 20px;
+        }
+        #result {
+            margin-top: 20px;
+            font-size: 16px;
+            word-break: break-all;
+        }
+    </style>
+</head>
+<body>
+    <h1>QRコードリーダー</h1>
+    <video id="video" playsinline autoplay></video>
+    <div id="result"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    <script>
+        const video = document.getElementById('video');
+        const resultDiv = document.getElementById('result');
+
+        async function startCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { 
+                        facingMode: 'environment'  // リアカメラを優先
+                    }
+                });
+                video.srcObject = stream;
+                video.play();
+                requestAnimationFrame(tick);
+            } catch (err) {
+                console.error('カメラの起動に失敗:', err);
+                resultDiv.textContent = 'カメラを起動できませんでした。';
+            }
+        }
+
+        function tick() {
+            if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                const canvas = document.createElement('canvas');
+                canvas.height = video.videoHeight;
+                canvas.width = video.videoWidth;
+                canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+                
+                const imageData = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height);
+                const code = jsQR(imageData.data, imageData.width, imageData.height);
+                
+                if (code) {
+                    resultDiv.textContent = 'QRコード: ' + code.data;
+                    // オプション: QRコード検出時にビープ音を鳴らす
+                    new Audio('https://www.soundjay.com/button/beep-07.mp3').play();
+                }
+            }
+            requestAnimationFrame(tick);
+        }
+
+        // ページ読み込み時にカメラを起動
+        document.addEventListener('DOMContentLoaded', startCamera);
+    </script>
+</body>
+</html>
